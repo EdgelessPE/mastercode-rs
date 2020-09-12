@@ -21,6 +21,8 @@ fn main() {
   println!("{}", nozip_code);
   println!("{:#?}", code_36::decode_nozip(&nozip_code.to_string()));
   println!("{:#?}", selected_id);
+  let s = String::from("2111111111111111111111111111111111GaE641248");
+  println!("{:?}", code_36::zip(&s));
 }
 
 mod code_36 {
@@ -106,5 +108,86 @@ mod code_36 {
       } as i32);
     }
     return Ok(final_resl);
+  }
+
+  pub fn zip(code: &String) -> Result<String> {
+    if code.len() < 3 {
+      return Err(anyhow!("Insufficient length,长度为{}", code.len()));
+    }
+    let mut codeori: Vec<String> = Vec::new();
+    for i in code.chars().collect::<Vec<char>>() {
+      codeori.push(i.to_string());
+    }
+    codeori.reverse();
+    codeori.pop();
+    let mut count: u32 = 0; //z标识符
+    let mut cache = "i".to_string();
+    let placeholder = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    let mut select: String;
+    for i in 0..codeori.len() {
+      select = codeori.get(i).unwrap().to_string();
+      if placeholder.iter().any(|e| e == &select) {
+        if select == cache {
+          if count != std::u32::MAX {
+            count += 1;
+          } else {
+            codeori[i - 2] = "z".to_string();
+            codeori[i - 3] = std::char::from_digit(count, 36)
+              .unwrap()
+              .to_string()
+              .to_uppercase();
+            codeori[i - 4] = "y".to_string();
+            for j in 5..=count {
+              codeori[i - j as usize] = "i".to_string();
+            }
+            cache = select;
+            count = 0;
+          }
+        } else {
+          if count >= 4 {
+            codeori[i - 2] = "z".to_string();
+            codeori[i - 3] = std::char::from_digit(count, 36)
+              .unwrap()
+              .to_string()
+              .to_uppercase();
+            codeori[i - 4] = "y".to_string();
+            if count != 4 {
+              for j in 5..=count {
+                codeori[i - j as usize] = "i".to_string();
+              }
+            }
+          }
+          cache = select;
+          count = 0;
+        }
+      }else{
+        count=0;
+        cache = "i".to_string();
+      }
+    }
+    if count >= 4 {
+      codeori[code.len() - 3] = "z".to_string();
+      codeori[code.len() - 4] = std::char::from_digit(count, 36)
+        .unwrap()
+        .to_string()
+        .to_uppercase();
+      codeori[code.len() - 5] = "y".to_string();
+      if count != 4 {
+        for j in 5..=count {
+          codeori[code.len() - 1 - j as usize] = "i".to_string();
+        }
+      }
+      //count = 0;
+    }
+    codeori.reverse();
+    return Ok({
+      let mut resl = String::from("2");
+      for i in &codeori {
+        if i != "i" {
+          resl.push_str(i);
+        }
+      }
+      resl
+    });
   }
 }
